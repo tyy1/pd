@@ -14,11 +14,10 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/gorilla/mux"
 	"github.com/pingcap/pd/server"
 	"github.com/unrolled/render"
+	"net/http"
 )
 
 type schedulerHandler struct {
@@ -93,7 +92,6 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-
 	case "balance-adjacent-region-scheduler":
 		var args []string
 		leaderLimit, ok := input["leader_limit"].(string)
@@ -117,6 +115,25 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := h.AddGrantLeaderScheduler(uint64(storeID)); err != nil {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	case "transfer-region-scheduler":
+		regionID, ok := input["region_id"].(float64)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing region id")
+			return
+		}
+		storeIDs,ok:=parseStoreIDs(input["to_store_ids"])
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "invalid store ids to transfer region to")
+			return
+		}
+		if len(storeIDs) == 0 {
+			h.r.JSON(w, http.StatusBadRequest, "missing store ids to transfer region to")
+			return
+		}
+		if err:=h.AddTransferRegionsScheduler(uint64(regionID),storeIDs);err!=nil{
+			h.r.JSON(w,http.StatusInternalServerError,err.Error())
 			return
 		}
 	case "evict-leader-scheduler":
@@ -151,6 +168,28 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			limit = uint64(l)
 		}
 		if err := h.AddShuffleHotRegionScheduler(limit); err != nil {
+			h.r.JSON(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	case "transfer-region-to-label-scheduler":
+		regionID, ok := input["region_id"].(float64)
+		if !ok {
+			/*x:=reflect.TypeOf(regionID)
+			y:=x.String()*/
+			h.r.JSON(w, http.StatusBadRequest, "missing region id")
+			return
+		}
+		label_key,ok:=input["label_key"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_key")
+			return
+		}
+		label_value,ok:=input["label_value"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_value")
+			return
+		}
+		if err:=h.AddTransferRegionToLabelScheduler(uint64(regionID),label_key,label_value);err!=nil{
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
 		}
