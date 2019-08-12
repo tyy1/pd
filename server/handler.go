@@ -41,6 +41,11 @@ var (
 	ErrRegionNotFound = func(regionID uint64) error {
 		return errors.Errorf("region %v not found", regionID)
 	}
+	//tyy  ErrStoreNotFound is error for store not found
+	ErrStoreNotFound= func(storeID uint64) error {
+		return errors.Errorf("store %v not found", storeID)
+	}
+
 	// ErrRegionAbnormalPeer is error info for region has abonormal peer
 	ErrRegionAbnormalPeer = func(regionID uint64) error {
 		return errors.Errorf("region %v has abnormal peer", regionID)
@@ -71,7 +76,7 @@ func (h *Handler) GetScheduleConfig() *ScheduleConfig {
 	return h.s.GetScheduleConfig()
 }
 
-func (h *Handler) getCoordinator() (*coordinator, error) {
+func (h *Handler)  getCoordinator() (*coordinator, error) {
 	cluster := h.s.GetRaftCluster()
 	if cluster == nil {
 		return nil, errors.WithStack(ErrNotBootstrapped)
@@ -237,6 +242,25 @@ func (h *Handler) AddAdjacentRegionScheduler(args ...string) error {
 func (h *Handler) AddGrantLeaderScheduler(storeID uint64) error {
 	return h.AddScheduler("grant-leader", strconv.FormatUint(storeID, 10))
 }
+//tyy
+func (h *Handler)AddTransferRegionToStoreScheduler(regionID uint64,storeID uint64)error{
+	c, err := h.getCoordinator()
+	if err != nil {
+		return err
+	}
+	region:=c.cluster.GetRegion(regionID)
+	if region==nil {
+		return ErrRegionNotFound(regionID)
+	}
+	store:=c.cluster.GetStore(storeID)
+	if store==nil {
+		return ErrStoreNotFound(storeID)
+	}
+	regionIDstr:=strconv.FormatUint(regionID,10)
+	storeIDstr:=strconv.FormatUint(storeID,10)
+	return h.AddScheduler("transfer-region",regionIDstr,storeIDstr)
+}
+
 
 // AddEvictLeaderScheduler adds an evict-leader-scheduler.
 func (h *Handler) AddEvictLeaderScheduler(storeID uint64) error {
@@ -257,7 +281,85 @@ func (h *Handler) AddShuffleRegionScheduler() error {
 func (h *Handler) AddShuffleHotRegionScheduler(limit uint64) error {
 	return h.AddScheduler("shuffle-hot-region", strconv.FormatUint(limit, 10))
 }
+//tyy
+func (h *Handler)AddTransferResionsToLabelScheduler(lk string,lv string,regionID1... float64)  error {
+	if len(regionID1)==0 {
+		return errors.New("no regions")
+		//return h.AddTransferRegionToLabelScheduler(uint64(regionID1[1]), lk, lv)
+	}else {
+		for _,regionID:=range regionID1{
+			if err:= h.AddTransferRegionToLabelScheduler(uint64(regionID), lk, lv);err!=nil{
+				return err
+			}
+		}
+	}
+	return nil
+}
+//tyy
+func (h *Handler)AddTransferRegionsOfLabelToLabelScheduler(from_lk string,from_lv string,lk string,lv string) error {
+	c, err := h.getCoordinator()
+	if err != nil {
+		return err
+	}
+	var source_store []uint64
+	allStores:=c.cluster.GetStores()
+	for _,store:=range allStores {
+		if store.GetLabelValue(from_lk)==from_lv {
+			source_store=append(source_store,store.GetID())
+		}
+	}
+	if len(source_store)==0{return errors.New("the source label not exist!")}
+	var source_region_ids =make(map[uint64]struct{})
+	for _,storeid:=range source_store{
+		regions:=c.cluster.getStoreRegions(storeid)
+		for _,region:=range regions{
+			source_region_ids[region.GetID()]= struct{}{}
+		}
+	}
+	if len(source_region_ids)==0 {
+		return errors.New("the source label has no region!")
+	}
+	flag:=true
+	for _,store:=range allStores {
+		if store.GetLabelValue(lk)==lv {
+			flag=false
+			break
+		}
+	}
+	if flag{return errors.New("the target label not found!")}
+	for regionid,_:=range source_region_ids{
+		var args []string
+		args=append(args,strconv.FormatUint(regionid,10))
+		args=append(args,lk)
+		args=append(args,lv)
+		return h.AddScheduler("transfer-region-to-label",args[0:]...)
+	}
+	return nil
+}
 
+//tyy
+func (h *Handler)AddTransferRegionToLabelScheduler(regionID uint64,lk string,lv string)  error{
+	c, err := h.getCoordinator()
+	if err != nil {
+		return err
+	}
+	region:=c.cluster.GetRegion(regionID)
+	if region==nil {
+		return ErrRegionNotFound(regionID)
+	}
+	stores:=c.cluster.GetStores()
+	for _,store:=range stores  {
+		if store.GetLabelValue(lk)==lv {
+			var args []string
+			args=append(args,strconv.FormatUint(regionID,10))
+			args=append(args,lk)
+			args=append(args,lv)
+			return h.AddScheduler("transfer-region-to-label",args[0:]...)
+		}
+	}
+	return errors.Errorf("label not found")
+
+}
 // AddRandomMergeScheduler adds a random-merge-scheduler.
 func (h *Handler) AddRandomMergeScheduler() error {
 	return h.AddScheduler("random-merge")
@@ -408,15 +510,24 @@ func (h *Handler) AddTransferLeaderOperator(regionID uint64, storeID uint64) err
 	}
 
 	newLeader := region.GetStoreVoter(storeID)
-	if newLeader == nil {
+	if newLeader == nil {//tyy   This storeID is not exist
 		return errors.Errorf("region has no voter in store %v", storeID)
 	}
-
 	op := schedule.CreateTransferLeaderOperator("admin-transfer-leader", region, region.GetLeader().GetStoreId(), newLeader.GetStoreId(), schedule.OpAdmin)
 	if ok := c.opController.AddOperator(op); !ok {
 		return errors.WithStack(ErrAddOperator)
 	}
 	return nil
+	/*if schedule.OpRecordCheck("TransferLeaderOperator",regionID,time.Now()) {
+		schedule.OpRecordAdd("TransferLeaderOperator",regionID,time.Now())
+		op := schedule.CreateTransferLeaderOperator("admin-transfer-leader", region, region.GetLeader().GetStoreId(), newLeader.GetStoreId(), schedule.OpAdmin)
+		if ok := c.opController.AddOperator(op); !ok {
+			return errors.WithStack(ErrAddOperator)
+		}
+		return nil
+	}else{
+		return errors.New("TransferLeaderOperator cannot be created repeatedly in few minutes")
+	}*/
 }
 
 // AddTransferRegionOperator adds an operator to transfer region to the stores.

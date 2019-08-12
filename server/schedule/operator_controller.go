@@ -174,7 +174,6 @@ func (oc *OperatorController) PushOperators() {
 // AddWaitingOperator adds operators to waiting operators.
 func (oc *OperatorController) AddWaitingOperator(ops ...*Operator) bool {
 	oc.Lock()
-
 	if !oc.checkAddOperator(ops...) {
 		for _, op := range ops {
 			operatorWaitCounter.WithLabelValues(op.Desc(), "add_canceled").Inc()
@@ -218,6 +217,7 @@ func (oc *OperatorController) AddOperator(ops ...*Operator) bool {
 	for _, op := range ops {
 		oc.addOperatorLocked(op)
 	}
+
 	return true
 }
 
@@ -283,8 +283,7 @@ func (oc *OperatorController) addOperatorLocked(op *Operator) bool {
 
 	log.Info("add operator", zap.Uint64("region-id", regionID), zap.Reflect("operator", op))
 
-	// If there is an old operator, replace it. The priority should be checked
-	// already.
+	// If there is an old operator, replace it. The priority should be checked already.
 	if old, ok := oc.operators[regionID]; ok {
 		log.Info("replace old operator", zap.Uint64("region-id", regionID), zap.Reflect("operator", old))
 		operatorCounter.WithLabelValues(old.Desc(), "replaced").Inc()
@@ -592,7 +591,6 @@ func NewUnfinishedOpInfluence(operators []*Operator, cluster Cluster) OpInfluenc
 	influence := OpInfluence{
 		storesInfluence: make(map[uint64]*StoreInfluence),
 	}
-
 	for _, op := range operators {
 		if !op.IsTimeout() && !op.IsFinish() {
 			region := cluster.GetRegion(op.RegionID())

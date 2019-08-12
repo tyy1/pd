@@ -53,11 +53,14 @@ func intervalGrow(x time.Duration, maxInterval time.Duration, typ intervalGrowth
 }
 
 type baseScheduler struct {
-	opController *schedule.OperatorController
+	opController   *schedule.OperatorController
+	user           bool
+	start_time     time.Time
+	end_time       time.Time
 }
 
 func newBaseScheduler(opController *schedule.OperatorController) *baseScheduler {
-	return &baseScheduler{opController: opController}
+	return &baseScheduler{opController: opController,user:false}
 }
 
 func (s *baseScheduler) GetMinInterval() time.Duration {
@@ -71,3 +74,23 @@ func (s *baseScheduler) GetNextInterval(interval time.Duration) time.Duration {
 func (s *baseScheduler) Prepare(cluster schedule.Cluster) error { return nil }
 
 func (s *baseScheduler) Cleanup(cluster schedule.Cluster) {}
+
+func (s *baseScheduler) SetUserTrue(){
+	s.user=true
+}
+func (s *baseScheduler) IsUser()  bool {
+	return s.user
+}
+func (s *baseScheduler) SetStartTime(time time.Time) {
+	s.start_time=time
+}
+func (s *baseScheduler) SetEndTime(time time.Time) {
+	s.end_time=time
+}
+func (s *baseScheduler) StartTime() (time.Time) {
+	return s.start_time
+}
+func (s *baseScheduler) EndTime() (time.Time) {
+	return s.end_time
+}
+

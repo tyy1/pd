@@ -14,14 +14,18 @@
 package command
 
 import (
+	"errors"
+	"fmt"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/spf13/cobra"
+	"strings"
+	"time"
 )
-
 var (
+	timeLayout = "2006-01-02 15:04:05"
 	schedulersPrefix = "pd/api/v1/schedulers"
 )
 
@@ -34,6 +38,9 @@ func NewSchedulerCommand() *cobra.Command {
 	c.AddCommand(NewShowSchedulerCommand())
 	c.AddCommand(NewAddSchedulerCommand())
 	c.AddCommand(NewRemoveSchedulerCommand())
+	c.AddCommand(T_NewAddSchedulerCommand())
+
+
 	return c
 }
 
@@ -61,6 +68,48 @@ func showSchedulerCommandFunc(cmd *cobra.Command, args []string) {
 	cmd.Println(r)
 }
 
+func T_NewAddSchedulerCommand() *cobra.Command  {
+	c := &cobra.Command{
+		Use:   "t_add <scheduler>",
+		Short: "add a scheduler",
+	}
+	c.AddCommand(NewTransferRegionsSchedulerCommand())
+	c.AddCommand(NewTransferRegionToLabelCommand())
+	c.AddCommand(NewTransferTableTolabelCommand())
+	c.AddCommand(NewTransferRegionsOfKeyRangeToLabel())
+	c.AddCommand(NewTransferRegionsOfLabelToLabel())
+	return c
+}
+func NewTransferRegionsOfLabelToLabel()  *cobra.Command{
+	c:=&cobra.Command{
+		Use:"transfer-regions-of-label-to-label-scheduler <label_key> <label_value> <to_label_key> <to_label_value>",
+		Short:"transfer a label's regions to the specified label's stores",
+		Run:transRegionsOfLabelToLabelCommandfunc,
+	}
+	return c
+}
+func transRegionsOfLabelToLabelCommandfunc(cmd *cobra.Command,args []string)  {
+	if len(args)!=4{
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	input := make(map[string]interface{})
+	input["name"] = cmd.Name()
+	input["label_key"]=args[2]
+	input["label_value"]=args[3]
+	input["from_lk"]=args[0]
+	input["from_lv"]=args[1]
+	postJSON(cmd,schedulersPrefix,input)
+}
+func NewTransferRegionsOfKeyRangeToLabel() *cobra.Command {
+	c:=&cobra.Command{
+		Use:"transfer-regions-of-keyrange-to-label-scheduler <start_key> <limit> <label_key> <label_value>",
+		Short:"transfer a keyrange's regions to the specified label's stores",
+		Run:transRegionsOfKeyRangeToLabelCommandfunc,
+	}
+	c.Flags().String("format", "hex", "the key format")
+	return c
+}
 // NewAddSchedulerCommand returns a command to add scheduler.
 func NewAddSchedulerCommand() *cobra.Command {
 	c := &cobra.Command{
@@ -80,6 +129,150 @@ func NewAddSchedulerCommand() *cobra.Command {
 	c.AddCommand(NewBalanceAdjacentRegionSchedulerCommand())
 	c.AddCommand(NewLabelSchedulerCommand())
 	return c
+}
+func transRegionsOfKeyRangeToLabelCommandfunc(cmd *cobra.Command,args []string)  {
+	if len(args)!=4{
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	input := make(map[string]interface{})
+	input["name"] = cmd.Name()
+	input["label_key"]=args[2]
+	input["label_value"]=args[3]
+	startkey,err:=parseKey(cmd.Flags(),args[0])
+	if err!=nil{
+		cmd.Println("Error:",err)
+		return
+	}
+	startkey=url.QueryEscape(startkey)
+	_,err=strconv.ParseUint(args[1], 10, 64)
+	if err != nil {
+		cmd.Println(err)
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	prefix:=nwpuGetRegionByKey+"/"+startkey+"/"+args[1]
+	r, err := doRequest(cmd, prefix, http.MethodGet)
+	if err != nil {
+		cmd.Printf("Failed to get region: %s\n", err)
+		return
+	}
+	//input["region_ids"]=r
+	ids:=parse_region_ids(r)
+	region_count:=len(ids)
+	input["region_count"]=region_count
+	for i,id:=range ids {
+		id_uint64,err:=strconv.ParseUint(id,10,64)
+		if err!=nil {
+			cmd.Println(err)
+			return
+		}
+		input[fmt.Sprintf("region%d",i)]=id_uint64
+	}
+	postJSON(cmd,schedulersPrefix,input)
+}
+func parse_region_ids(str string) []string{
+	var strs []string
+	str_split:=strings.Split(str[1:len(str)-2],",")
+	for _,sp:=range str_split{
+			strs=append(strs,sp)
+	}
+	return strs
+}
+//tyy
+func NewTransferTableTolabelCommand() *cobra.Command{
+	c:=&cobra.Command{
+		Use:"transfer-table-to-label-scheduler <db_name>  <table_name> <label_key> <label_value>",
+		Short:"transfer a table's regions to the specified label's stores",
+		Run:transferTableTolabelCommandfunc,
+	}
+	//c.Flags().String("afterTime","0min","the time to execute the scheduler")
+	return c
+}
+func transferTableTolabelCommandfunc(cmd *cobra.Command,args []string)  {
+	if len(args)!=4{
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	regionIDS,err:=get_regions_of_table(cmd,args[0],args[1])
+	if err != nil {
+		cmd.Println(err.Error())
+		return
+	}
+	/*dur,err:=parseAftertime(cmd.Flags())
+	if err != nil {
+		cmd.Println(err.Error())
+	}else{
+		cmd.Println(dur.String())
+	}*/
+	input := make(map[string]interface{})
+	input["name"] = cmd.Name()
+	//input["region_ids"] = regionIDS
+	input["region_count"]=len(regionIDS)
+	for i,regionid:=range regionIDS {
+		input[fmt.Sprintf("region%d",i)]=regionid
+	}
+	input["label_key"]=args[2]
+	input["label_value"]=args[3]
+	postJSON(cmd,schedulersPrefix,input)
+
+}
+//tyy
+func NewTransferRegionToLabelCommand() *cobra.Command{
+	c:=&cobra.Command{
+		Use:"transfer-region-to-label-scheduler <region_id> <label_key> <label_value>",
+		Short:"transfer a region's peers to the specified label's stores",
+		Run:transferRegionToLabelSchedulerCommandfunc,
+	}
+	return c
+}
+//tyy
+func transferRegionToLabelSchedulerCommandfunc(cmd *cobra.Command,args []string){
+	if len(args)!=3{
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	regionId, err := strconv.ParseUint(args[0], 10, 64)
+	if err != nil {
+		cmd.Println(err)
+		return
+	}
+	input := make(map[string]interface{})
+	input["name"] = cmd.Name()
+	input["region_id"] = regionId
+	input["label_key"]=args[1]
+	input["label_value"]=args[2]
+	postJSON(cmd,schedulersPrefix,input)
+}
+
+//tyy
+func NewTransferRegionsSchedulerCommand() *cobra.Command{
+	c:=&cobra.Command{
+		Use:"transfer-region-to-store-scheduler <region_id> <to_store_id>",
+		Short:"transfer a region's peers to the specified stores",
+		Run:transferRegionsSchedulerCommandfunc,
+	}
+	//c.Flags().String("afterTime","","the time delay to schedule ")
+	return c
+}
+//tyy
+func transferRegionsSchedulerCommandfunc(cmd *cobra.Command,args []string){
+	if len(args)!=2{
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	ids, err := parseUint64s(args)
+	if err != nil {
+		cmd.Println(err)
+		return
+	}
+	input := make(map[string]interface{})
+	input["name"] = cmd.Name()
+	input["region_id"] = ids[0]
+	input["to_store_id"] = ids[1]
+
+	postJSON(cmd, schedulersPrefix, input)
+
 }
 
 // NewGrantLeaderSchedulerCommand returns a command to add a grant-leader-scheduler.
@@ -225,7 +418,6 @@ func addSchedulerCommandFunc(cmd *cobra.Command, args []string) {
 		cmd.Println(cmd.UsageString())
 		return
 	}
-
 	input := make(map[string]interface{})
 	input["name"] = cmd.Name()
 	postJSON(cmd, schedulersPrefix, input)
@@ -315,4 +507,63 @@ func removeSchedulerCommandFunc(cmd *cobra.Command, args []string) {
 		cmd.Println(err)
 		return
 	}
+}
+
+func parseAftertime(flags *pflag.FlagSet) (time.Duration, error){
+	timet :=flags.Lookup("afterTime").Value.String()
+	times:=strings.Split(timet,"_")
+	if len(times)!=2 {
+		return 0,errors.New("afterTime format error or no flag!")
+	}else{
+		timetype:=times[1]
+		if timetype!="min"||timetype!="hour"||timetype!="day" {
+			return 0,errors.New("afterTime format error!")
+		}
+		timeInt,err:=strconv.ParseUint(times[0],10,64)
+		if err!=nil {
+			return 0,err
+		}
+		switch timetype {
+		case "min":
+			return time.Duration(timeInt)*time.Minute,nil
+		case "hour":
+			return time.Duration(timeInt)*time.Hour,nil
+		case "day":
+			return time.Duration(timeInt*24)*time.Hour,nil
+		default:
+			return 0,errors.New("error!")
+		}
+	}
+}
+
+func parseTime(flags *pflag.FlagSet)(map[string]string,error) {
+	var start time.Time
+	var end time.Time
+	var err error
+	//loc, _ := time.LoadLocation("Local")
+	time_str:=make(map[string]string)
+	start_time :=flags.Lookup("start_time").Value.String()
+	if start_time!=""{
+		start,err=time.Parse(timeLayout,start_time)
+		if err!=nil {
+			return nil ,err
+		}
+		if time.Now().After(start) {
+			return nil,errors.New("the start time is error")
+		}
+	}else{start=time.Now()}
+	end_time :=flags.Lookup("end_time").Value.String()
+	if end_time!="" {
+		//end,err=time.Parse(timeLayout,end_time)
+		end,err=time.Parse(timeLayout,end_time)
+		if err!=nil {
+			return nil,err
+		}
+		if end.Sub(start)<=0 {
+			return nil,errors.New("the start time is late to end time ")
+		}
+	}
+	time_str["start_time"]=start_time
+	time_str["end_time"]=end_time
+	return time_str,nil
 }

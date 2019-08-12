@@ -21,6 +21,7 @@ import (
 	"github.com/pingcap/pd/server"
 	"github.com/pingcap/pd/server/schedule"
 	"github.com/unrolled/render"
+
 )
 
 type operatorHandler struct {
@@ -124,6 +125,12 @@ func (h *operatorHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusBadRequest, "missing region id")
 			return
 		}
+		//tyy
+		//a :=
+		//log.Info("Welcome to Placement Driver (PD)")
+        //n:=input["to_store_ids"]
+        //typeN:=reflect.TypeOf(n)
+		//h.r.JSON(w, 500, fmt.Sprint("5000000%v",typeN))
 		storeIDs, ok := parseStoreIDs(input["to_store_ids"])
 		if !ok {
 			h.r.JSON(w, http.StatusBadRequest, "invalid store ids to transfer region to")
@@ -267,7 +274,7 @@ func (h *operatorHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	h.r.JSON(w, http.StatusOK, nil)
 }
 
-func parseStoreIDs(v interface{}) (map[uint64]struct{}, bool) {
+func parseStoreIDs(v interface{}) (map[uint64]struct{}, bool) {//tyy??????????  error function
 	items, ok := v.([]interface{})
 	if !ok {
 		return nil, false

@@ -32,6 +32,14 @@ func createRouter(prefix string, svr *server.Server) *mux.Router {
 	router := mux.NewRouter().PathPrefix(prefix).Subrouter()
 	handler := svr.GetHandler()
 
+	//tyy
+	nwpuHandler:=newNwpuHandler(handler,rd)
+	//router.HandleFunc("/api/v1/nwpu", nwpuHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/nwpu",nwpuHandler.Post).Methods("POST")
+	router.HandleFunc("/api/v1/nwpu/key/{key}", nwpuHandler.GetRegionByKey).Methods("GET")
+	router.HandleFunc("/api/v1/nwpu/key/{start_key}/{limit}",nwpuHandler.GetRegionsByKeyRange).Methods("GET")
+	//tyy
+
 	operatorHandler := newOperatorHandler(handler, rd)
 	router.HandleFunc("/api/v1/operators", operatorHandler.List).Methods("GET")
 	router.HandleFunc("/api/v1/operators", operatorHandler.Post).Methods("POST")

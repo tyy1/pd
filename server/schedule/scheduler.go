@@ -77,6 +77,12 @@ type Scheduler interface {
 	Cleanup(cluster Cluster)
 	Schedule(cluster Cluster) []*Operator
 	IsScheduleAllowed(cluster Cluster) bool
+	SetUserTrue()
+	IsUser()bool
+	SetStartTime(time time.Time)
+	SetEndTime(time time.Time)
+	StartTime() time.Time
+	EndTime() time.Time
 }
 
 // CreateSchedulerFunc is for creating scheduler.

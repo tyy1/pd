@@ -14,12 +14,12 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/pingcap/pd/server"
 	"github.com/unrolled/render"
 	"net/http"
 )
-
 type schedulerHandler struct {
 	*server.Handler
 	r *render.Render
@@ -52,7 +52,6 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 		h.r.JSON(w, http.StatusBadRequest, "missing scheduler name")
 		return
 	}
-
 	switch name {
 	case "balance-leader-scheduler":
 		if err := h.AddBalanceLeaderScheduler(); err != nil {
@@ -117,22 +116,18 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-	case "transfer-region-scheduler":
+	case "transfer-region-to-store-scheduler"://tyy
 		regionID, ok := input["region_id"].(float64)
 		if !ok {
 			h.r.JSON(w, http.StatusBadRequest, "missing region id")
 			return
 		}
-		storeIDs,ok:=parseStoreIDs(input["to_store_ids"])
+		storeID,ok:=input["to_store_id"].(float64)
 		if !ok {
-			h.r.JSON(w, http.StatusBadRequest, "invalid store ids to transfer region to")
+			h.r.JSON(w, http.StatusBadRequest, "missing store id to transfer region to")
 			return
 		}
-		if len(storeIDs) == 0 {
-			h.r.JSON(w, http.StatusBadRequest, "missing store ids to transfer region to")
-			return
-		}
-		if err:=h.AddTransferRegionsScheduler(uint64(regionID),storeIDs);err!=nil{
+		if err:=h.AddTransferRegionToStoreScheduler(uint64(regionID),uint64(storeID));err!=nil{
 			h.r.JSON(w,http.StatusInternalServerError,err.Error())
 			return
 		}
@@ -171,7 +166,7 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-	case "transfer-region-to-label-scheduler":
+	case "transfer-region-to-label-scheduler"://tyy
 		regionID, ok := input["region_id"].(float64)
 		if !ok {
 			/*x:=reflect.TypeOf(regionID)
@@ -192,6 +187,94 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 		if err:=h.AddTransferRegionToLabelScheduler(uint64(regionID),label_key,label_value);err!=nil{
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
+		}
+	case "transfer-regions-of-keyrange-to-label-scheduler"://tyy
+		label_key,ok:=input["label_key"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_key")
+			return
+		}
+		label_value,ok:=input["label_value"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_value")
+			return
+		}
+		var regionID []float64
+		region_count,ok:=input["region_count"].(float64)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing region_count")
+			return
+		}
+		for i:=0;i<int(region_count);i++{
+			r,ok:=input[fmt.Sprintf("region%d",i)].(float64)
+			if !ok {
+				h.r.JSON(w, http.StatusBadRequest, "missing region_id")
+				return
+			}
+			regionID=append(regionID,r)
+		}
+		for _,regionid:=range regionID{
+			if err:=h.AddTransferRegionToLabelScheduler(uint64(regionid),label_key,label_value);err!=nil{
+				h.r.JSON(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+	case "transfer-regions-of-label-to-label-scheduler"://tyy
+		label_key,ok:=input["label_key"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_key")
+			return
+		}
+		label_value,ok:=input["label_value"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_value")
+			return
+		}
+		from_label_key,ok:=input["from_lk"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing from_label_key")
+			return
+		}
+		from_label_value,ok:=input["from_lv"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing from_label_value")
+			return
+		}
+		if err:=h.AddTransferRegionsOfLabelToLabelScheduler(from_label_key,from_label_value,label_key,label_value);err!=nil{
+			h.r.JSON(w,http.StatusBadRequest,err.Error())
+			return
+	}
+
+	case "transfer-table-to-label-scheduler"://tyy
+		var regionID []float64
+		region_count,ok:=input["region_count"].(float64)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing region_count")
+			return
+		}
+		for i:=0;i<int(region_count);i++{
+			r,ok:=input[fmt.Sprintf("region%d",i)].(float64)
+			if !ok {
+				h.r.JSON(w, http.StatusBadRequest, "missing region_id")
+				return
+			}
+			regionID=append(regionID,r)
+		}
+		label_key,ok:=input["label_key"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_key")
+			return
+		}
+		label_value,ok:=input["label_value"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_value")
+			return
+		}
+		for _,regionid:=range regionID{
+			if err:=h.AddTransferRegionToLabelScheduler(uint64(regionid),label_key,label_value);err!=nil{
+				h.r.JSON(w, http.StatusInternalServerError, err.Error())
+				return
+			}
 		}
 	default:
 		h.r.JSON(w, http.StatusBadRequest, "unknown scheduler")

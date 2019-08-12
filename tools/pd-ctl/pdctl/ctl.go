@@ -63,6 +63,9 @@ func Start(args []string) {
 		command.NewTableNamespaceCommand(),
 		command.NewHealthCommand(),
 		command.NewLogCommand(),
+		//tyy
+		command.NewTOperatorCommand(),
+
 	)
 
 	rootCmd.SetArgs(args)

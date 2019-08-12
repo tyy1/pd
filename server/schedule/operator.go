@@ -599,20 +599,21 @@ func CreateAddLightPeerSteps(newStore uint64, peerID uint64, cluster Cluster) []
 }
 
 // CreateTransferLeaderOperator creates an operator that transfers the leader from a source store to a target store.
-func CreateTransferLeaderOperator(desc string, region *core.RegionInfo, sourceStoreID uint64, targetStoreID uint64, kind OperatorKind) *Operator {
+func CreateTransferLeaderOperator(desc string, region *core.RegionInfo, sourceStoreID uint64, targetStoreID uint64, kind OperatorKind) (*Operator ){
 	step := TransferLeader{FromStore: sourceStoreID, ToStore: targetStoreID}
 	return NewOperator(desc, region.GetID(), region.GetRegionEpoch(), kind|OpLeader, step)
 }
 
 // CreateMoveRegionOperator creates an operator that moves a region to specified stores.
-func CreateMoveRegionOperator(desc string, cluster Cluster, region *core.RegionInfo, kind OperatorKind, storeIDs map[uint64]struct{}) (*Operator, error) {
+func CreateMoveRegionOperator(desc string, cluster Cluster, region *core.RegionInfo, kind OperatorKind,
+	storeIDs map[uint64]struct{}) (*Operator, error) {
 	var steps []OperatorStep
 	// Add missing peers.
 	for id := range storeIDs {
-		if region.GetStorePeer(id) != nil {
+		if region.GetStorePeer(id) != nil {//this region  has a  peer  in this store
 			continue
 		}
-		peer, err := cluster.AllocPeer(id)
+		peer, err := cluster.AllocPeer(id)// alloc a peer for this store
 		if err != nil {
 			return nil, err
 		}

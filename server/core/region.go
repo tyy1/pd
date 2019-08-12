@@ -20,7 +20,6 @@ import (
 	"math/rand"
 	"reflect"
 	"strings"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/kvproto/pkg/pdpb"
@@ -39,6 +38,7 @@ type RegionInfo struct {
 	readBytes       uint64
 	approximateSize int64
 	approximateKeys int64
+	op_by_user      bool
 }
 
 // NewRegionInfo creates RegionInfo with region's meta and leader peer.
@@ -46,6 +46,7 @@ func NewRegionInfo(region *metapb.Region, leader *metapb.Peer, opts ...RegionCre
 	regionInfo := &RegionInfo{
 		meta:   region,
 		leader: leader,
+		op_by_user:false,
 	}
 
 	for _, opt := range opts {
@@ -53,6 +54,13 @@ func NewRegionInfo(region *metapb.Region, leader *metapb.Peer, opts ...RegionCre
 	}
 	classifyVoterAndLearner(regionInfo)
 	return regionInfo
+}
+//tyy
+func (r *RegionInfo)setOpByUserTrue()  {
+	r.op_by_user=true
+}
+func (r *RegionInfo)setOpByUserFalse()  {
+	r.op_by_user=false
 }
 
 // classifyVoterAndLearner sorts out voter and learner from peers into different slice.

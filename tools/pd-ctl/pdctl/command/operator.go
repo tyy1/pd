@@ -170,6 +170,7 @@ func transferRegionCommandFunc(cmd *cobra.Command, args []string) {
 	input["name"] = cmd.Name()
 	input["region_id"] = ids[0]
 	input["to_store_ids"] = ids[1:]
+	//cmd.Println(input["to_store_ids"],reflect.TypeOf(input["to_store_ids"]))///
 	postJSON(cmd, operatorsPrefix, input)
 }
 

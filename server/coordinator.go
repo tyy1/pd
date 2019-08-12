@@ -79,7 +79,7 @@ func newCoordinator(cluster *clusterInfo, hbStreams *heartbeatStreams, classifie
 		namespaceChecker: checker.NewNamespaceChecker(cluster, classifier),
 		mergeChecker:     checker.NewMergeChecker(cluster, classifier),
 		regionScatterer:  schedule.NewRegionScatterer(cluster, classifier),
-		schedulers:       make(map[string]*scheduleController),
+		schedulers:       make(map[string]*scheduleController), //the scheduler which is running
 		opController:     schedule.NewOperatorController(cluster, hbStreams),
 		classifier:       classifier,
 		hbStreams:        hbStreams,
@@ -420,7 +420,6 @@ func (c *coordinator) runScheduler(s *scheduleController) {
 
 	timer := time.NewTimer(s.GetInterval())
 	defer timer.Stop()
-
 	for {
 		select {
 		case <-timer.C:
@@ -429,9 +428,31 @@ func (c *coordinator) runScheduler(s *scheduleController) {
 				continue
 			}
 			if op := s.Schedule(); op != nil {
-				c.opController.AddWaitingOperator(op...)
+				//tyy
+				if s.IsUser() {
+					log.Info("tyy1 this is user scheduler ")
+					for _,opi:=range op{
+						schedule.OpRecordAdd(opi.RegionID(),time.Now())
+					}
+					c.opController.AddWaitingOperator(op...)
+				}else{//isuser false
+				log.Info("tyy2 this is not user scheduler ")
+					flag:=true//this scheduler can be executed
+					for _,opi:=range op{
+			      			 if !schedule.OpRecordCheck(opi.RegionID(),time.Now()){//user op this region in few minutes
+							flag=false
+							log.Info("tyy3 this no_user scheduler cannot be add into queue")
+							break
+						 }
+					}
+					if flag {
+						log.Info("tyy4 this no_user scheduler can be add into queue")
+						c.opController.AddWaitingOperator(op...)
+					}
+				}
+				//tyy
+				//c.opController.AddWaitingOperator(op...)//only this raw
 			}
-
 		case <-s.Ctx().Done():
 			log.Info("scheduler has been stopped",
 				zap.String("scheduler-name", s.GetName()),
