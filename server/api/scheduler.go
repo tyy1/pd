@@ -16,9 +16,12 @@ package api
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/pd/server"
 	"github.com/unrolled/render"
 	"net/http"
+
+	"github.com/pingcap/pd/server/schedule"
 )
 type schedulerHandler struct {
 	*server.Handler
@@ -41,6 +44,22 @@ func (h *schedulerHandler) List(w http.ResponseWriter, r *http.Request) {
 	h.r.JSON(w, http.StatusOK, schedulers)
 }
 
+// zhb
+// Set the UserSource and UserTarget
+func setSourceTarget(data map[string]interface{}) error {
+	sel, _ := data["select"].(int64)
+	key, _ := data["labelKey"].(string)
+	value, _ := data["labelValue"].(string)
+	label := &metapb.StoreLabel{Key: key, Value: value}
+	if sel > 0{
+		schedule.UserSource = append(schedule.UserSource, label)
+		return nil
+	} else {
+		schedule.UserSource = append(schedule.UserSource, label)
+		return nil
+	}
+}
+
 func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 	var input map[string]interface{}
 	if err := readJSONRespondError(h.r, w, r.Body, &input); err != nil {
@@ -53,6 +72,13 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch name {
+	// zhb
+	// Set the UserSource and UserTarget
+	case "set-source-target":
+		if err := setSourceTarget(input); err != nil {
+			h.r.JSON(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	case "balance-leader-scheduler":
 		if err := h.AddBalanceLeaderScheduler(); err != nil {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())

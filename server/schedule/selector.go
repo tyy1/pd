@@ -14,6 +14,7 @@
 package schedule
 
 import (
+	"github.com/pingcap/kvproto/pkg/metapb"
 	"math/rand"
 
 	"github.com/pingcap/pd/server/core"
@@ -34,11 +35,22 @@ func NewBalanceSelector(kind core.ResourceKind, filters []Filter) *BalanceSelect
 	}
 }
 
+// zhb
+// SourceStore is used to store label that user hope to raise or down.
+type SourceLabel []*metapb.StoreLabel
+var UserSource SourceLabel
+var UserTarget SourceLabel
+
 // SelectSource selects the store that can pass all filters and has the maximal
 // resource score.
 func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, filters ...Filter) *core.StoreInfo {
 	filters = append(filters, s.filters...)
 	var result *core.StoreInfo
+	// zhb
+	// Test
+	//tem := &metapb.StoreLabel{Key: "rack", Value: "1"}
+	//UserSource = append(UserSource, tem)
+	var result2 *core.StoreInfo
 	for _, store := range stores {
 		if FilterSource(opt, store, filters) {
 			continue
@@ -48,8 +60,39 @@ func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, fi
 				store.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) {
 			result = store
 		}
+		// zhb
+		flag := selectSourceStore(store)
+		if (result2 == nil && flag)||
+			(result2.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) <
+				store.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) && flag) {
+			result2 = store
+		}
+		if result2 != nil {
+			return result2
+		}
 	}
 	return result
+}
+
+// zhb
+// If label of the store in UserSource and not in UserTarget return true.
+func selectSourceStore(store *core.StoreInfo) bool {
+	flag := false
+	for _, label := range UserSource {
+		if label.Value == store.GetLabelValue(label.Key) {
+			flag = true
+			break
+		}
+	}
+
+	for _, label := range UserTarget {
+		if label.Value == store.GetLabelValue(label.Key) {
+			flag = false
+			break
+		}
+	}
+
+	return flag
 }
 
 // SelectTarget selects the store that can pass all filters and has the minimal
@@ -57,6 +100,7 @@ func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, fi
 func (s *BalanceSelector) SelectTarget(opt Options, stores []*core.StoreInfo, filters ...Filter) *core.StoreInfo {
 	filters = append(filters, s.filters...)
 	var result *core.StoreInfo
+
 	for _, store := range stores {
 		if FilterTarget(opt, store, filters) {
 			continue
@@ -113,6 +157,12 @@ func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, fi
 		best      *core.StoreInfo
 		bestScore float64
 	)
+	// zhb
+	// Initial value
+	var (
+		best2      *core.StoreInfo
+		bestScore2 float64
+	)
 	for _, store := range stores {
 		if FilterTarget(opt, store, filters) {
 			continue
@@ -121,6 +171,17 @@ func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, fi
 		if best == nil || compareStoreScore(opt, store, score, best, bestScore) > 0 {
 			best, bestScore = store, score
 		}
+		// zhb
+		// Meanwhile satisfied in UserTarget and not in UserSource
+		flag := selectSourceStore(store)
+		if (best2 == nil || compareStoreScore(opt, store, score, best2, bestScore2) > 0) && !flag {
+			best2, bestScore2 = store, score
+		}
+	}
+	// zhb
+	// If best2 is not nil, return best2, otherwise return best.
+	if best2 != nil || FilterTarget(opt, best2, s.filters){
+		return best2
 	}
 	if best == nil || FilterTarget(opt, best, s.filters) {
 		return nil
