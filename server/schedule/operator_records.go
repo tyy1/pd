@@ -1,12 +1,16 @@
 package schedule
 
-import "time"
+import (
+	"github.com/pingcap/kvproto/pkg/metapb"
+	"time"
+)
 
 const (
 	OperatorIntervalTime = 5 * time.Minute
 )
 // record user last op time
 var OpRecords map[uint64]time.Time
+var UserScheRecords map[uint64]*metapb.StoreLabel
 
 func init()  {
 	OpRecords=make(map[uint64]time.Time)

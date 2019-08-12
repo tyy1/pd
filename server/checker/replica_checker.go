@@ -132,6 +132,8 @@ func (r *ReplicaChecker) selectBestStoreToAddReplica(region *core.RegionInfo, fi
 	}
 	regionStores := r.cluster.GetRegionStores(region)
 	selector := schedule.NewReplicaSelector(regionStores, r.cluster.GetLocationLabels(), r.filters...)
+	// Preserve the region that will be scheduled.
+	schedule.TemRegion = region.GetID()
 	target := selector.SelectTarget(r.cluster, r.cluster.GetStores(), filters...)
 	if target == nil {
 		return 0, 0
