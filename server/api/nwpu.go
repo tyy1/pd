@@ -111,13 +111,13 @@ func (h *nwpuHandler) Post (w http.ResponseWriter, r *http.Request) {
 			}
 			rr,_:=h.Handler.GetRaftCluster().GetRegionByID(uint64(regionID))
 			if rr==nil{
-				h.r.JSON(w, http.StatusInternalServerError, "region not found")//tyy   need to correct here
+				h.r.JSON(w, http.StatusInternalServerError, "region not found")//   need to correct here
 				return
 			}
 			//_,err1:=h.Handler.GetRascheduleftCluster().GetStore(uint64(storeID))
 			_,err1:=h.Handler.GetRaftCluster().GetStore(uint64(storeID))
 			if err1!=nil{
-				errStoreNotFound:=fmt.Sprint("region has no voter in store ",storeID)//tyy?????
+				errStoreNotFound:=fmt.Sprint("region has no voter in store ",storeID)
 				h.r.JSON(w, http.StatusInternalServerError,errStoreNotFound)
 				return
 			}

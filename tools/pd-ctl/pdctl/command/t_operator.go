@@ -229,7 +229,7 @@ func tgetRegionByKeyCommandFunc(cmd *cobra.Command,args []string){
 func NewTTransferLeaderCommand() *cobra.Command{
 	c:=&cobra.Command{
 		Use: "transfer-leader <region_id> <to_store_id> [--timeType-min|hour|day] <timeInt>",
-		Short:"tyy test TransferLeader",
+		Short:"test TransferLeader",
 		Run:ttransferLeaderCommandFunc,
 	}
 	c.Flags().String("timeType","min","the time type")

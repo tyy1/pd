@@ -175,7 +175,8 @@ func parse_region_ids(str string) []string{
 	}
 	return strs
 }
-//tyy
+
+// Initial new NewTransferTableTolabelCommand command.
 func NewTransferTableTolabelCommand() *cobra.Command{
 	c:=&cobra.Command{
 		Use:"transfer-table-to-label-scheduler <db_name>  <table_name> <label_key> <label_value>",
@@ -213,7 +214,8 @@ func transferTableTolabelCommandfunc(cmd *cobra.Command,args []string)  {
 	postJSON(cmd,schedulersPrefix,input)
 
 }
-//tyy
+
+// Initial a NewTransferRegionToLabelCommand command
 func NewTransferRegionToLabelCommand() *cobra.Command{
 	c:=&cobra.Command{
 		Use:"transfer-region-to-label-scheduler <region_id> <label_key> <label_value>",
@@ -222,7 +224,8 @@ func NewTransferRegionToLabelCommand() *cobra.Command{
 	}
 	return c
 }
-//tyy
+
+// Let cmd transfer to input information for transferRegionToLabelSchedulerCommand
 func transferRegionToLabelSchedulerCommandfunc(cmd *cobra.Command,args []string){
 	if len(args)!=3{
 		cmd.Println(cmd.UsageString())
@@ -241,7 +244,7 @@ func transferRegionToLabelSchedulerCommandfunc(cmd *cobra.Command,args []string)
 	postJSON(cmd,schedulersPrefix,input)
 }
 
-//tyy
+// Initial a NewTransferRegionScheduler command
 func NewTransferRegionsSchedulerCommand() *cobra.Command{
 	c:=&cobra.Command{
 		Use:"transfer-region-to-store-scheduler <region_id> <to_store_id>",
@@ -251,7 +254,8 @@ func NewTransferRegionsSchedulerCommand() *cobra.Command{
 	//c.Flags().String("afterTime","","the time delay to schedule ")
 	return c
 }
-//tyy
+
+// Let cmd transfer to input information for transferRegionsSchedulerCommand
 func transferRegionsSchedulerCommandfunc(cmd *cobra.Command,args []string){
 	if len(args)!=2{
 		cmd.Println(cmd.UsageString())

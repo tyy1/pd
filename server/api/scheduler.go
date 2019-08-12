@@ -16,9 +16,12 @@ package api
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/pd/server"
 	"github.com/unrolled/render"
 	"net/http"
+
+	"github.com/pingcap/pd/server/schedule"
 )
 type schedulerHandler struct {
 	*server.Handler
@@ -41,6 +44,21 @@ func (h *schedulerHandler) List(w http.ResponseWriter, r *http.Request) {
 	h.r.JSON(w, http.StatusOK, schedulers)
 }
 
+// Set the UserSource and UserTarget
+func setSourceTarget(data map[string]interface{}) error {
+	sel, _ := data["select"].(int64)
+	key, _ := data["labelKey"].(string)
+	value, _ := data["labelValue"].(string)
+	label := &metapb.StoreLabel{Key: key, Value: value}
+	if sel > 0{
+		schedule.UserSource = append(schedule.UserSource, label)
+		return nil
+	} else {
+		schedule.UserSource = append(schedule.UserSource, label)
+		return nil
+	}
+}
+
 func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 	var input map[string]interface{}
 	if err := readJSONRespondError(h.r, w, r.Body, &input); err != nil {
@@ -53,6 +71,13 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch name {
+
+	// Set the UserSource and UserTarget
+	case "set-source-target":
+		if err := setSourceTarget(input); err != nil {
+			h.r.JSON(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	case "balance-leader-scheduler":
 		if err := h.AddBalanceLeaderScheduler(); err != nil {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
@@ -116,7 +141,7 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-	case "transfer-region-to-store-scheduler"://tyy
+	case "transfer-region-to-store-scheduler":
 		regionID, ok := input["region_id"].(float64)
 		if !ok {
 			h.r.JSON(w, http.StatusBadRequest, "missing region id")
@@ -166,7 +191,7 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-	case "transfer-region-to-label-scheduler"://tyy
+	case "transfer-region-to-label-scheduler":
 		regionID, ok := input["region_id"].(float64)
 		if !ok {
 			/*x:=reflect.TypeOf(regionID)
@@ -188,7 +213,7 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-	case "transfer-regions-of-keyrange-to-label-scheduler"://tyy
+	case "transfer-regions-of-keyrange-to-label-scheduler":
 		label_key,ok:=input["label_key"].(string)
 		if !ok {
 			h.r.JSON(w, http.StatusBadRequest, "missing label_key")
@@ -219,7 +244,7 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-	case "transfer-regions-of-label-to-label-scheduler"://tyy
+	case "transfer-regions-of-label-to-label-scheduler":
 		label_key,ok:=input["label_key"].(string)
 		if !ok {
 			h.r.JSON(w, http.StatusBadRequest, "missing label_key")
@@ -245,7 +270,7 @@ func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 			return
 	}
 
-	case "transfer-table-to-label-scheduler"://tyy
+	case "transfer-table-to-label-scheduler":
 		var regionID []float64
 		region_count,ok:=input["region_count"].(float64)
 		if !ok {

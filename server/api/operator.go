@@ -125,7 +125,7 @@ func (h *operatorHandler) Post(w http.ResponseWriter, r *http.Request) {
 			h.r.JSON(w, http.StatusBadRequest, "missing region id")
 			return
 		}
-		//tyy
+
 		//a :=
 		//log.Info("Welcome to Placement Driver (PD)")
         //n:=input["to_store_ids"]
@@ -274,7 +274,7 @@ func (h *operatorHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	h.r.JSON(w, http.StatusOK, nil)
 }
 
-func parseStoreIDs(v interface{}) (map[uint64]struct{}, bool) {//tyy??????????  error function
+func parseStoreIDs(v interface{}) (map[uint64]struct{}, bool) {
 	items, ok := v.([]interface{})
 	if !ok {
 		return nil, false
