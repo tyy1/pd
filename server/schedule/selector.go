@@ -150,6 +150,9 @@ func (s *ReplicaSelector) SelectSource(opt Options, stores []*core.StoreInfo) *c
 	return best
 }
 
+// TemRegion is used to store the region that will be scheduled.
+var TemRegion uint64
+
 // SelectTarget selects the store that can pass all filters and has the maximal
 // distinct score.
 func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, filters ...Filter) *core.StoreInfo {
@@ -164,6 +167,14 @@ func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, fi
 		bestScore2 float64
 	)
 	for _, store := range stores {
+		// If TargetStore of the region that will be scheduled is in UserScheRecords,
+		// then continue.
+		if label, ok := UserScheRecords[TemRegion]; ok {
+			labelValue := store.GetLabelValue(label.Key)
+			if labelValue != label.Value {
+				continue
+			}
+		}
 		if FilterTarget(opt, store, filters) {
 			continue
 		}
