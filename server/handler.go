@@ -41,7 +41,7 @@ var (
 	ErrRegionNotFound = func(regionID uint64) error {
 		return errors.Errorf("region %v not found", regionID)
 	}
-	//tyy  ErrStoreNotFound is error for store not found
+	//ErrStoreNotFound is error for store not found
 	ErrStoreNotFound= func(storeID uint64) error {
 		return errors.Errorf("store %v not found", storeID)
 	}
@@ -242,7 +242,8 @@ func (h *Handler) AddAdjacentRegionScheduler(args ...string) error {
 func (h *Handler) AddGrantLeaderScheduler(storeID uint64) error {
 	return h.AddScheduler("grant-leader", strconv.FormatUint(storeID, 10))
 }
-//tyy
+
+// Add TransferRegionToStoreScheduler to coordinator by api.
 func (h *Handler)AddTransferRegionToStoreScheduler(regionID uint64,storeID uint64)error{
 	c, err := h.getCoordinator()
 	if err != nil {
@@ -281,21 +282,8 @@ func (h *Handler) AddShuffleRegionScheduler() error {
 func (h *Handler) AddShuffleHotRegionScheduler(limit uint64) error {
 	return h.AddScheduler("shuffle-hot-region", strconv.FormatUint(limit, 10))
 }
-//tyy
-func (h *Handler)AddTransferResionsToLabelScheduler(lk string,lv string,regionID1... float64)  error {
-	if len(regionID1)==0 {
-		return errors.New("no regions")
-		//return h.AddTransferRegionToLabelScheduler(uint64(regionID1[1]), lk, lv)
-	}else {
-		for _,regionID:=range regionID1{
-			if err:= h.AddTransferRegionToLabelScheduler(uint64(regionID), lk, lv);err!=nil{
-				return err
-			}
-		}
-	}
-	return nil
-}
-//tyy
+
+// AddTransferRegionsOfLabelToLabelScheduler add a transfer-regions-of-label-to-label-scheduler.
 func (h *Handler)AddTransferRegionsOfLabelToLabelScheduler(from_lk string,from_lv string,lk string,lv string) error {
 	c, err := h.getCoordinator()
 	if err != nil {
@@ -337,7 +325,8 @@ func (h *Handler)AddTransferRegionsOfLabelToLabelScheduler(from_lk string,from_l
 	return nil
 }
 
-//tyy
+// AddTransferRegionToLabelScheduler add a transfer-regions-of-keyrange-to-label-scheduler,
+// transfer-region-to-label-scheduler, and transfer-region-to-label-scheduler.
 func (h *Handler)AddTransferRegionToLabelScheduler(regionID uint64,lk string,lv string)  error{
 	c, err := h.getCoordinator()
 	if err != nil {
@@ -510,7 +499,7 @@ func (h *Handler) AddTransferLeaderOperator(regionID uint64, storeID uint64) err
 	}
 
 	newLeader := region.GetStoreVoter(storeID)
-	if newLeader == nil {//tyy   This storeID is not exist
+	if newLeader == nil {
 		return errors.Errorf("region has no voter in store %v", storeID)
 	}
 	op := schedule.CreateTransferLeaderOperator("admin-transfer-leader", region, region.GetLeader().GetStoreId(), newLeader.GetStoreId(), schedule.OpAdmin)
@@ -518,16 +507,6 @@ func (h *Handler) AddTransferLeaderOperator(regionID uint64, storeID uint64) err
 		return errors.WithStack(ErrAddOperator)
 	}
 	return nil
-	/*if schedule.OpRecordCheck("TransferLeaderOperator",regionID,time.Now()) {
-		schedule.OpRecordAdd("TransferLeaderOperator",regionID,time.Now())
-		op := schedule.CreateTransferLeaderOperator("admin-transfer-leader", region, region.GetLeader().GetStoreId(), newLeader.GetStoreId(), schedule.OpAdmin)
-		if ok := c.opController.AddOperator(op); !ok {
-			return errors.WithStack(ErrAddOperator)
-		}
-		return nil
-	}else{
-		return errors.New("TransferLeaderOperator cannot be created repeatedly in few minutes")
-	}*/
 }
 
 // AddTransferRegionOperator adds an operator to transfer region to the stores.

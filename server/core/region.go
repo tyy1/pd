@@ -55,7 +55,9 @@ func NewRegionInfo(region *metapb.Region, leader *metapb.Peer, opts ...RegionCre
 	classifyVoterAndLearner(regionInfo)
 	return regionInfo
 }
-//tyy
+
+// If operator of this region was created by user, set op_by_user as true.
+// Otherwise set op_by_user as false.
 func (r *RegionInfo)setOpByUserTrue()  {
 	r.op_by_user=true
 }

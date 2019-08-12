@@ -135,7 +135,7 @@ func tryURLs(cmd *cobra.Command, f DoFunc) {
 		os.Exit(1)
 	}
 	endpoints := strings.Split(addrs, ",")
-	for _, endpoint := range endpoints {//tyy  endpoint:  http://127.0.0.1:2379
+	for _, endpoint := range endpoints {
 		var u *url.URL
 		u, err = url.Parse(endpoint)
 		if err != nil {

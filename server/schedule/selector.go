@@ -35,7 +35,7 @@ func NewBalanceSelector(kind core.ResourceKind, filters []Filter) *BalanceSelect
 	}
 }
 
-// zhb
+
 // SourceStore is used to store label that user hope to raise or down.
 type SourceLabel []*metapb.StoreLabel
 var UserSource SourceLabel
@@ -46,7 +46,7 @@ var UserTarget SourceLabel
 func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, filters ...Filter) *core.StoreInfo {
 	filters = append(filters, s.filters...)
 	var result *core.StoreInfo
-	// zhb
+
 	// Test
 	//tem := &metapb.StoreLabel{Key: "rack", Value: "1"}
 	//UserSource = append(UserSource, tem)
@@ -60,7 +60,7 @@ func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, fi
 				store.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) {
 			result = store
 		}
-		// zhb
+
 		flag := selectSourceStore(store)
 		if (result2 == nil && flag)||
 			(result2.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) <
@@ -74,7 +74,7 @@ func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, fi
 	return result
 }
 
-// zhb
+
 // If label of the store in UserSource and not in UserTarget return true.
 func selectSourceStore(store *core.StoreInfo) bool {
 	flag := false
@@ -157,7 +157,7 @@ func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, fi
 		best      *core.StoreInfo
 		bestScore float64
 	)
-	// zhb
+
 	// Initial value
 	var (
 		best2      *core.StoreInfo
@@ -171,14 +171,14 @@ func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, fi
 		if best == nil || compareStoreScore(opt, store, score, best, bestScore) > 0 {
 			best, bestScore = store, score
 		}
-		// zhb
+
 		// Meanwhile satisfied in UserTarget and not in UserSource
 		flag := selectSourceStore(store)
 		if (best2 == nil || compareStoreScore(opt, store, score, best2, bestScore2) > 0) && !flag {
 			best2, bestScore2 = store, score
 		}
 	}
-	// zhb
+
 	// If best2 is not nil, return best2, otherwise return best.
 	if best2 != nil || FilterTarget(opt, best2, s.filters){
 		return best2

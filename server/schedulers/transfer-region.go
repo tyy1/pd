@@ -8,7 +8,6 @@ import (
 	"strconv"
 )
 
-//tyy
 func init()  {
 	schedule.RegisterScheduler("transfer-region", func(opController *schedule.OperatorController, args []string) (scheduler schedule.Scheduler, e error) {
 		if len(args) != 2 {

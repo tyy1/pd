@@ -1,5 +1,4 @@
 package schedulers
-//tyy
 
 import (
 	"fmt"
@@ -57,7 +56,6 @@ func (s *transferRegionToLabelScheduler)GetType() string {
 }
 func (s *transferRegionToLabelScheduler)IsScheduleAllowed(cluster schedule.Cluster) bool {
 	return s.opController.OperatorCount(schedule.OpRegion) < cluster.GetRegionScheduleLimit()
-	//isAllowed=false减少一次调度
 }
 func (s *transferRegionToLabelScheduler)Schedule(cluster schedule.Cluster) []*schedule.Operator  {
 	schedulerCounter.WithLabelValues(s.GetName(), "schedule").Inc()
