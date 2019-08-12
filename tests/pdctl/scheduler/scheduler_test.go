@@ -48,22 +48,31 @@ func (s *schedulerTestSuite) TestScheduler(c *C) {
 	pdAddr := cluster.GetConfig().GetClientURLs()
 	cmd := pdctl.InitCommand()
 
+	label1:=metapb.StoreLabel{Key:"zone",Value:"s1"}
+	label2:=metapb.StoreLabel{Key:"zone",Value:"s2"}
+	label3:=metapb.StoreLabel{Key:"zone",Value:"s3"}
+	label4:=metapb.StoreLabel{Key:"zone",Value:"s4"}
 	stores := []*metapb.Store{
 		{
 			Id:    1,
 			State: metapb.StoreState_Up,
+			Labels:[]*metapb.StoreLabel{&label1},
+
 		},
 		{
 			Id:    2,
 			State: metapb.StoreState_Up,
+			Labels:[]*metapb.StoreLabel{&label2},
 		},
 		{
 			Id:    3,
 			State: metapb.StoreState_Up,
+			Labels:[]*metapb.StoreLabel{&label3},
 		},
 		{
 			Id:    4,
 			State: metapb.StoreState_Up,
+			Labels:[]*metapb.StoreLabel{&label4},
 		},
 	}
 
@@ -72,8 +81,11 @@ func (s *schedulerTestSuite) TestScheduler(c *C) {
 	for _, store := range stores {
 		pdctl.MustPutStore(c, leaderServer.GetServer(), store.Id, store.State, store.Labels)
 	}
-
 	pdctl.MustPutRegion(c, cluster, 1, 1, []byte("a"), []byte("b"))
+	pdctl.MustPutRegion(c, cluster, 2, 2, []byte("c"),[]byte("d"))
+	pdctl.MustPutRegion(c, cluster, 3, 3, []byte("e"), []byte("f"))
+	pdctl.MustPutRegion(c, cluster, 4, 4, []byte("g"), []byte("h"))
+
 	defer cluster.Destroy()
 
 	time.Sleep(3 * time.Second)
@@ -113,6 +125,14 @@ func (s *schedulerTestSuite) TestScheduler(c *C) {
 		c.Assert(expected[scheduler], Equals, true)
 	}
 
+	// scheduelr t_add command:transfer-region-to-store-scheduler
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-region-to-store-scheduler","1","2"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u",pdAddr,"scheduler","remove","transfer-region1-to-store2-scheduler"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
 	// scheduler delete command
 	args = []string{"-u", pdAddr, "scheduler", "remove", "balance-region-scheduler"}
 	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
@@ -131,4 +151,27 @@ func (s *schedulerTestSuite) TestScheduler(c *C) {
 	for _, scheduler := range schedulers {
 		c.Assert(expected[scheduler], Equals, true)
 	}
+
+	// scheduler t_add command
+	args=[]string{"-u", pdAddr, "operator", "add","transfer-region","2","1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-region-to-label-scheduler","3","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","2","zone","s4"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-table-to-label-scheduler","mysql","user","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-label-to-label-scheduler","2","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
 }
+

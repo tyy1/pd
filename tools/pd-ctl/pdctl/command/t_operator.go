@@ -13,7 +13,7 @@ var(
 	nwpuPrefix="pd/api/v1/nwpu"
 	nwpuGetRegionByKey="pd/api/v1/nwpu/key"
 )
-
+// tyy
 func NewTOperatorCommand() *cobra.Command{
 	c :=&cobra.Command{
 		Use: 	"t_operator",
@@ -42,8 +42,8 @@ func testTimeCommandfunc(cmd *cobra.Command,args []string)  {
 		cmd.Println(cmd.UsageString())
 		return
 	}
-	//toBeCharge := "2015-01-01 00:00:00"                             //待转化为时间戳的字符串 注意 这里的小时和分钟还要秒必须写 因为是跟着模板走的 修改模板的话也可以不写
-	timeLayout := "2006-01-02 15:04:05"                             //转化所需模板
+	//toBeCharge := "2015-01-01 00:00:00"   //待转化为时间戳的字符串 注意 这里的小时和分钟还要秒必须写 因为是跟着模板走的 修改模板的话也可以不写
+	timeLayout := "2006-01-02 15:04:05"  //转化所需模板
 	//loc, _ := time.LoadLocation("Local")
 	start_time,err:=time.Parse(timeLayout,args[0])
 	if err!= nil{

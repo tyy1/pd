@@ -6,8 +6,6 @@ import (
 	"github.com/pingcap/pd/server/core"
 	"github.com/pingcap/pd/server/schedule"
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/log"
-	"go.uber.org/zap"
 	"strconv"
 )
 
@@ -136,67 +134,4 @@ func select_min_score_region(m map[uint64]float64)uint64{
 	}
 	delete(m,min_score_region)
 	return min_score_region
-}
-
-func (s *transferRegionToLabelScheduler)Schedule1(cluster schedule.Cluster) []*schedule.Operator{
-	schedulerCounter.WithLabelValues(s.GetName(), "schedule").Inc()
-	region:=cluster.GetRegion(s.regionID)
-	if region==nil {
-		schedulerCounter.WithLabelValues(s.GetName(),"no_region").Inc()
-		return nil
-	}
-	storeIds_label:=make(map[uint64]interface{})//stores of peer that label match given label
-	peer_storeIds_nolabel:=make(map[uint64]interface{})////stores of peer that label cannot match given label
-	peers:=region.GetPeers()
-	for _,peer:=range peers{
-		store:=cluster.GetStore(peer.GetStoreId())
-		if store.GetLabelValue(s.label_key)==s.label_value{
-			storeIds_label[store.GetID()]= struct {}{}
-		}else {peer_storeIds_nolabel[store.GetID()]= struct {}{}}
-	}
-	stores := cluster.GetStores()
-	labelStores:=make(map[uint64]struct{})//stores that matches the given label key and value,and the store does not have the region's peer
-	//var labelStores []uint64
-	for _,store:=range stores{
-		if (region.GetStorePeer(store.GetID())==nil)&&(store.GetLabelValue(s.label_key)==s.label_value){
-			labelStores[store.GetID()]= struct{}{}
-		}
-	}
-	if len(labelStores)==0 {
-		schedulerCounter.WithLabelValues(s.GetName(), "no_label_stores").Inc()
-		return nil
-	}
-	log.Debug("transfer-region-to-label scheduler found no stores to match label",zap.Reflect("stores",labelStores))
-
-/*	storeIDs:=make(map[uint64]struct{}) //target stores
-	for k,v:=range labelStores  {
-		storeIDs[k]=v
-		if len(storeIDs)>=cluster.GetMaxReplicas() {
-			break
-		}
-	}*/
-	if len(storeIds_label)>=len(labelStores) {
-		schedulerCounter.WithLabelValues(s.GetName(), "not necessary operator").Inc()
-		return nil
-	}
-	storeIDs:=make(map[uint64]struct{}) //target stores
-	labelStores_score:=make(map[uint64]float64)
-	for storeid,_:=range labelStores  {
-			labelStores_score[storeid]=cluster.GetStore(storeid).RegionScore(cluster.GetHighSpaceRatio(), cluster.GetLowSpaceRatio(), 0)
-	}
-	for{
-		if len(storeIDs)<cluster.GetMaxReplicas()&&len(labelStores_score)>0 {
-			storeIDs[select_min_score_region(labelStores_score)]= struct{}{}
-		}else{break}
-	}
-	op, err := schedule.CreateMoveRegionOperator("admin-move-region", cluster, region, schedule.OpRegion, storeIDs)
-	if err!=nil {
-		schedulerCounter.WithLabelValues(s.GetName(), "create_operator_failes").Inc()
-		return nil
-	}
-	op.SetPriorityLevel(core.HighPriority)
-	return []*schedule.Operator{op}
-
-    //select best store of new peer for each peer
-
 }
