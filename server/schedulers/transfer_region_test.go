@@ -7,20 +7,24 @@ import (
 	"github.com/pingcap/pd/server/schedule"
 	"testing"
 )
+func Test(t *testing.T) {
+	TestingT(t)
+}
 
 var _ = Suite(&testTransferRegionSuite{})
 
-type testTransferRegionSuite struct{}
-
-func Test(t *testing.T) {
-	TestingT(t)
+type testTransferRegionSuite struct{
+	tc *mockcluster.Cluster
+	lb schedule.Scheduler
+	oc *schedule.OperatorController
 }
 
 func (s *testTransferRegionSuite) TestTransferRegion(c *C){
 	opt := mockoption.NewScheduleOptions()
 	tc := mockcluster.NewCluster(opt)
 
-	_, err := schedule.CreateScheduler("transfer-region", schedule.NewOperatorController(nil, nil))
+	s.oc=schedule.NewOperatorController(nil, nil)
+	_, err := schedule.CreateScheduler("transfer-region", s.oc)
 	//messageError=append(messageError,err.Error())
 	c.Assert(err, NotNil)
 
@@ -36,11 +40,25 @@ func (s *testTransferRegionSuite) TestTransferRegion(c *C){
 	tc.AddLeaderRegion(3, 3)
 	tc.AddLeaderRegion(4, 4)
 
-	region1:=tc.GetRegion(1)
-	c.Assert(region1.GetStorePeer(4),IsNil)
-	sl, err := schedule.CreateScheduler("transfer-region", schedule.NewOperatorController(nil, nil),"1","4")
-	c.Assert(err, IsNil)
-	c.Assert(sl.Schedule(tc), NotNil)
+    sl:=newTransferRegionScheduler(s.oc,1,4)
+    c.Assert(sl,NotNil)
+    ops:=sl.Schedule(tc)
+    c.Assert(ops,NotNil)
+
+    c.Assert(sl.GetName(),Equals,"transfer-region1-to-store4-scheduler")
+    c.Assert(sl.GetType(),Equals,"transfer-region")
+    isAllowed:=s.oc.OperatorCount(schedule.OpRegion)<tc.RegionScheduleLimit
+    c.Assert(isAllowed,Equals,sl.IsScheduleAllowed(tc))
+
+	sl=newTransferRegionScheduler(s.oc,1,1)
+	c.Assert(sl,NotNil)
+	ops=sl.Schedule(tc)
+	c.Assert(ops,IsNil)
+
+	sl=newTransferRegionScheduler(s.oc,10,1)
+	c.Assert(sl,NotNil)
+	ops=sl.Schedule(tc)
+	c.Assert(ops,IsNil)
 }
 
 var _ = Suite(&testTransferRegionToLabelSuite{})
@@ -50,10 +68,6 @@ type testTransferRegionToLabelSuite struct{}
 func (s *testTransferRegionToLabelSuite)TestTransferRegionToLabel(c *C)  {
 	opt := mockoption.NewScheduleOptions()
 	tc := mockcluster.NewCluster(opt)
-
-	_, err := schedule.CreateScheduler("transfer-region", schedule.NewOperatorController(nil, nil))
-	//messageError=append(messageError,err.Error())
-	c.Assert(err, NotNil)
 
 	// Add stores 1,2,3,4
 	tc.AddLabelsStore(1, 4, map[string]string{"zone": "z1", "rack": "r1", "host": "h1"})
@@ -70,5 +84,10 @@ func (s *testTransferRegionToLabelSuite)TestTransferRegionToLabel(c *C)  {
 	sl, err := schedule.CreateScheduler("transfer-region-to-label", schedule.NewOperatorController(nil, nil),"1","zone","z2")
 	c.Assert(err, IsNil)
 	c.Assert(sl.Schedule(tc), NotNil)
+
+	sl, err = schedule.CreateScheduler("transfer-region-to-label", schedule.NewOperatorController(nil, nil),"1","zone","z1")
+	c.Assert(err, IsNil)
+	c.Assert(sl.Schedule(tc), IsNil)
+
 
 }

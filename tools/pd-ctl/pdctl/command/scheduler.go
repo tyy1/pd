@@ -387,7 +387,7 @@ func addSchedulerForShuffleHotRegionCommandFunc(cmd *cobra.Command, args []strin
 	if len(args) == 1 {
 		l, err := strconv.ParseUint(args[0], 10, 64)
 		if err != nil {
-			cmd.Println("Error: ", err)
+			cmd.Println( err)
 			return
 		}
 		limit = l
