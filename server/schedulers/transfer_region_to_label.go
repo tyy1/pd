@@ -115,6 +115,9 @@ func (s *transferRegionToLabelScheduler)Schedule(cluster schedule.Cluster) []*sc
 	}
 	// If AddWaitingOperator returns true, add the target label of the scheduler to UserScheRecords.
 	for _, uOp := range ops {
+		if s.label_value == "" || s.label_key == "" {
+			continue
+		}
 		temLabel := metapb.StoreLabel{Key: s.label_key, Value: s.label_value}
 		schedule.UserScheRecords[uOp.RegionID()] = &temLabel
 	}
