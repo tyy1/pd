@@ -47,7 +47,6 @@ func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, fi
 	filters = append(filters, s.filters...)
 	var result *core.StoreInfo
 
-	// Test
 	//tem := &metapb.StoreLabel{Key: "rack", Value: "1"}
 	//UserSource = append(UserSource, tem)
 	var result2 *core.StoreInfo
@@ -191,7 +190,7 @@ func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, fi
 	}
 
 	// If best2 is not nil, return best2, otherwise return best.
-	if best2 != nil || FilterTarget(opt, best2, s.filters){
+	if best2 != nil && FilterTarget(opt, best2, s.filters){
 		return best2
 	}
 	if best == nil || FilterTarget(opt, best, s.filters) {

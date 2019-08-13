@@ -54,7 +54,7 @@ func setSourceTarget(data map[string]interface{}) error {
 		schedule.UserSource = append(schedule.UserSource, label)
 		return nil
 	} else {
-		schedule.UserSource = append(schedule.UserSource, label)
+		schedule.UserTarget = append(schedule.UserTarget, label)
 		return nil
 	}
 }

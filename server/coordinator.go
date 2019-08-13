@@ -431,18 +431,18 @@ func (c *coordinator) runScheduler(s *scheduleController) {
 				// If the scheduler was created by user.
 				if s.IsUser() {
 					log.Info("this is user scheduler ")
-					for _,opi:=range op{
+					for _,opi:=range op {
 						schedule.OpRecordAdd(opi.RegionID(),time.Now())
 					}
 					c.opController.AddWaitingOperator(op...)
-				}else{
+				} else {
 				// If the scheduler was created by pd.
 				// //isuser is false
 				log.Info("this is not user scheduler ")
-					flag:=true//this scheduler can be executed
-					for _,opi:=range op{
-			      			 if !schedule.OpRecordCheck(opi.RegionID(),time.Now()){//user op this region in few minutes
-							flag=false
+					flag := true
+					for _,opi:=range op {
+			      			 if !schedule.OpRecordCheck(opi.RegionID(),time.Now()) {
+							flag = false
 							log.Info("this no_user scheduler cannot be add into queue")
 							break
 						 }
