@@ -231,15 +231,8 @@ func transferTableTolabelCommandfunc(cmd *cobra.Command,args []string)  {
 		cmd.Println(err.Error())
 		return
 	}
-	/*dur,err:=parseAftertime(cmd.Flags())
-	if err != nil {
-		cmd.Println(err.Error())
-	}else{
-		cmd.Println(dur.String())
-	}*/
 	input := make(map[string]interface{})
 	input["name"] = cmd.Name()
-	//input["region_ids"] = regionIDS
 	input["region_count"]=len(regionIDS)
 	for i,regionid:=range regionIDS {
 		input[fmt.Sprintf("region%d",i)]=regionid
