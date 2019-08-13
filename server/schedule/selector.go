@@ -191,7 +191,7 @@ func (s *ReplicaSelector) SelectTarget(opt Options, stores []*core.StoreInfo, fi
 	}
 
 	// If best2 is not nil, return best2, otherwise return best.
-	if best2 != nil && FilterTarget(opt, best2, s.filters){
+	if best2 != nil && !FilterTarget(opt, best2, s.filters){
 		return best2
 	}
 	if best == nil || FilterTarget(opt, best, s.filters) {
