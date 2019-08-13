@@ -153,7 +153,15 @@ func (s *schedulerTestSuite) TestScheduler(c *C) {
 	}
 
 	// scheduler t_add command
-	args=[]string{"-u", pdAddr, "operator", "add","transfer-region","2","1"}
+	args=[]string{"-u", pdAddr, "operator", "t_add","set-scheduler","2","1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+	args=[]string{"-u", pdAddr, "operator", "t_add","set-scheduler","2","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+	args=[]string{"-u", pdAddr, "operator", "t_add","transfer-region","2","1"}
 	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
 	c.Assert(err, IsNil)
 

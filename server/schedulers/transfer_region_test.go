@@ -25,7 +25,6 @@ func (s *testTransferRegionSuite) TestTransferRegion(c *C){
 
 	s.oc=schedule.NewOperatorController(nil, nil)
 	_, err := schedule.CreateScheduler("transfer-region", s.oc)
-	//messageError=append(messageError,err.Error())
 	c.Assert(err, NotNil)
 
 	// Add stores 1,2,3,4
@@ -44,11 +43,19 @@ func (s *testTransferRegionSuite) TestTransferRegion(c *C){
     c.Assert(sl,NotNil)
     ops:=sl.Schedule(tc)
     c.Assert(ops,NotNil)
+    sl.GetType()
+    sl.GetType()
+    sl.IsScheduleAllowed(tc)
+
+	_, err = schedule.CreateScheduler("transfer-region", s.oc,"1","2")
+	c.Assert(err, NotNil)
 
     c.Assert(sl.GetName(),Equals,"transfer-region1-to-store4-scheduler")
     c.Assert(sl.GetType(),Equals,"transfer-region")
     isAllowed:=s.oc.OperatorCount(schedule.OpRegion)<tc.RegionScheduleLimit
     c.Assert(isAllowed,Equals,sl.IsScheduleAllowed(tc))
+
+
 
 	sl=newTransferRegionScheduler(s.oc,1,1)
 	c.Assert(sl,NotNil)
@@ -56,6 +63,11 @@ func (s *testTransferRegionSuite) TestTransferRegion(c *C){
 	c.Assert(ops,IsNil)
 
 	sl=newTransferRegionScheduler(s.oc,10,1)
+	c.Assert(sl,NotNil)
+	ops=sl.Schedule(tc)
+	c.Assert(ops,IsNil)
+
+	sl=newTransferRegionScheduler(s.oc,1,2)
 	c.Assert(sl,NotNil)
 	ops=sl.Schedule(tc)
 	c.Assert(ops,IsNil)
@@ -79,7 +91,7 @@ func (s *testTransferRegionToLabelSuite)TestTransferRegionToLabel(c *C)  {
 	c.Assert(0,Equals,select_min_score_region(m))
 
 	// Add stores 1,2,3,4
-	tc.AddLabelsStore(1, 4, map[string]string{"zone": "z1", "rack": "r1", "host": "h1"})
+	tc.AddLabelsStore(1, 4, map[string]string{"zone": "z1", "rack": "r0", "host": "h1"})
 	tc.AddLabelsStore(2, 5, map[string]string{"zone": "z2", "rack": "r1", "host": "h1"})
 	tc.AddLabelsStore(3, 6, map[string]string{"zone": "z3", "rack": "r1", "host": "h1"})
 	tc.AddLabelsStore(4, 7, map[string]string{"zone": "z4", "rack": "r1", "host": "h1"})
@@ -90,24 +102,31 @@ func (s *testTransferRegionToLabelSuite)TestTransferRegionToLabel(c *C)  {
 	tc.AddLeaderRegion(3, 3)
 	tc.AddLeaderRegion(4, 4)
 
-	sl, err := schedule.CreateScheduler("transfer-region-to-label", schedule.NewOperatorController(nil, nil),"1","zone","z2")
-	c.Assert(err, IsNil)
-	c.Assert(sl.Schedule(tc), NotNil)
 
-	sl, err = schedule.CreateScheduler("transfer-region-to-label", schedule.NewOperatorController(nil, nil),"1","zone","z1")
-	c.Assert(err, IsNil)
-	c.Assert(sl.Schedule(tc), IsNil)
 
 	oc:=schedule.NewOperatorController(nil, nil)
-	sl=newTransferRegionToLabelScheduler(oc,1,"zone","z1")
+	sl:=newTransferRegionToLabelScheduler(oc,1,"zone","z1")
 	c.Assert(sl,NotNil)
-	ops:=sl.Schedule(tc)
-	c.Assert(ops,NotNil)
-
+	sl.Schedule(tc)
+	sl.GetName()
+	sl.GetType()
+	sl.IsScheduleAllowed(tc)
 	c.Assert(sl.GetName(),Equals,"tranfer-region%d-to-label-{key:zone-value:z1}")
 	c.Assert(sl.GetType(),Equals,"transfer-region-to-label")
 	isAllowed:=oc.OperatorCount(schedule.OpRegion)<tc.RegionScheduleLimit
 	c.Assert(isAllowed,Equals,sl.IsScheduleAllowed(tc))
 
+	sl = newTransferRegionToLabelScheduler(oc,10,"zone","z1")
+	sl.Schedule(tc)
 
+	sl = newTransferRegionToLabelScheduler(oc,1,"rack","r1")
+	sl.Schedule(tc)
+
+	_, err := schedule.CreateScheduler("transfer-region-to-label", schedule.NewOperatorController(nil, nil),"1","zone","z2")
+	c.Assert(err, IsNil)
+	c.Assert(sl.Schedule(tc), NotNil)
+
+	schedule.CreateScheduler("transfer-region-to-label", schedule.NewOperatorController(nil, nil),"1","zone","z1")
+	c.Assert(err, IsNil)
+	c.Assert(sl.Schedule(tc), IsNil)
 }
