@@ -20,6 +20,7 @@ import (
 	"github.com/pingcap/pd/server"
 	"github.com/unrolled/render"
 	"net/http"
+	"strconv"
 
 	"github.com/pingcap/pd/server/schedule"
 )
@@ -44,38 +45,45 @@ func (h *schedulerHandler) List(w http.ResponseWriter, r *http.Request) {
 	h.r.JSON(w, http.StatusOK, schedulers)
 }
 
-// Set the UserSource and UserTarget
-func setSourceTarget(data map[string]interface{}) error {
-	sel, _ := data["select"].(int64)
-	key, _ := data["labelKey"].(string)
-	value, _ := data["labelValue"].(string)
-	label := &metapb.StoreLabel{Key: key, Value: value}
-	if sel > 0{
-		schedule.UserSource = append(schedule.UserSource, label)
-		return nil
-	} else {
-		schedule.UserSource = append(schedule.UserSource, label)
-		return nil
-	}
-}
-
 func (h *schedulerHandler) Post(w http.ResponseWriter, r *http.Request) {
 	var input map[string]interface{}
 	if err := readJSONRespondError(h.r, w, r.Body, &input); err != nil {
 		return
 	}
-
 	name, ok := input["name"].(string)
 	if !ok {
 		h.r.JSON(w, http.StatusBadRequest, "missing scheduler name")
 		return
 	}
 	switch name {
-
-	// Set the UserSource and UserTarget
-	case "set-source-target":
-		if err := setSourceTarget(input); err != nil {
-			h.r.JSON(w, http.StatusInternalServerError, err.Error())
+	case "set-scheduler":
+		z_or_o,ok:=input["num"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing scheduler set number")
+			return
+		}
+		label_key,ok:=input["label_key"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_key")
+			return
+		}
+		label_value,ok:=input["label_value"].(string)
+		if !ok {
+			h.r.JSON(w, http.StatusBadRequest, "missing label_value")
+			return
+		}
+		u_z_or_o, err := strconv.ParseUint(z_or_o, 10, 64)
+		if err != nil {
+			h.r.JSON(w, http.StatusBadRequest, "missing scheduler set number into uint64")
+			return
+		}
+		switch uint64(u_z_or_o) {
+		case 0:
+			schedule.UserSource=[]*metapb.StoreLabel{{Key:label_key,Value:label_value}}
+		case 1:
+			schedule.UserTarget=[]*metapb.StoreLabel{{Key:label_key,Value:label_value}}
+		default:
+			h.r.JSON(w, http.StatusBadRequest, "err number")
 			return
 		}
 	case "balance-leader-scheduler":

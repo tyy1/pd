@@ -14,19 +14,16 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 var (
-	timeLayout = "2006-01-02 15:04:05"
 	schedulersPrefix = "pd/api/v1/schedulers"
+
 )
 
 // NewSchedulerCommand returns a scheduler command.
@@ -42,6 +39,39 @@ func NewSchedulerCommand() *cobra.Command {
 
 
 	return c
+}
+//NewSetLabelUserTargetOrSourceCommand return a command to set schedulers.
+func NewSetLabelUserTargetOrSourceCommand()*cobra.Command  {
+	c := &cobra.Command{
+		Use:   "set-scheduler <1|0> <label_key> <label_value>",
+		Short: "set label target or source",
+		Run:   setLabelUserTargetOrSourceCommandFunc,
+	}
+	return c
+}
+
+func setLabelUserTargetOrSourceCommandFunc(cmd *cobra.Command,args []string)  {
+	if len(args) != 3 {
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	v, err := strconv.ParseUint(args[0], 10, 64)
+	if err != nil {
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	input := make(map[string]interface{})
+	input["name"] = cmd.Name()
+
+	input["label_key"]=args[1]
+	input["label_value"]=args[2]
+	postJSON(cmd,schedulersPrefix,input)
+	if v!=0&&v!=1 {
+		cmd.Println(cmd.UsageString())
+		return
+	}
+	input["num"]=args[0]
+	postJSON(cmd,schedulersPrefix,input)
 }
 
 // NewShowSchedulerCommand returns a command to show schedulers.
@@ -78,6 +108,7 @@ func T_NewAddSchedulerCommand() *cobra.Command  {
 	c.AddCommand(NewTransferTableTolabelCommand())
 	c.AddCommand(NewTransferRegionsOfKeyRangeToLabel())
 	c.AddCommand(NewTransferRegionsOfLabelToLabel())
+	c.AddCommand(NewSetLabelUserTargetOrSourceCommand())
 	return c
 }
 func NewTransferRegionsOfLabelToLabel()  *cobra.Command{
@@ -511,63 +542,4 @@ func removeSchedulerCommandFunc(cmd *cobra.Command, args []string) {
 		cmd.Println(err)
 		return
 	}
-}
-
-func parseAftertime(flags *pflag.FlagSet) (time.Duration, error){
-	timet :=flags.Lookup("afterTime").Value.String()
-	times:=strings.Split(timet,"_")
-	if len(times)!=2 {
-		return 0,errors.New("afterTime format error or no flag!")
-	}else{
-		timetype:=times[1]
-		if timetype!="min"||timetype!="hour"||timetype!="day" {
-			return 0,errors.New("afterTime format error!")
-		}
-		timeInt,err:=strconv.ParseUint(times[0],10,64)
-		if err!=nil {
-			return 0,err
-		}
-		switch timetype {
-		case "min":
-			return time.Duration(timeInt)*time.Minute,nil
-		case "hour":
-			return time.Duration(timeInt)*time.Hour,nil
-		case "day":
-			return time.Duration(timeInt*24)*time.Hour,nil
-		default:
-			return 0,errors.New("error!")
-		}
-	}
-}
-
-func parseTime(flags *pflag.FlagSet)(map[string]string,error) {
-	var start time.Time
-	var end time.Time
-	var err error
-	//loc, _ := time.LoadLocation("Local")
-	time_str:=make(map[string]string)
-	start_time :=flags.Lookup("start_time").Value.String()
-	if start_time!=""{
-		start,err=time.Parse(timeLayout,start_time)
-		if err!=nil {
-			return nil ,err
-		}
-		if time.Now().After(start) {
-			return nil,errors.New("the start time is error")
-		}
-	}else{start=time.Now()}
-	end_time :=flags.Lookup("end_time").Value.String()
-	if end_time!="" {
-		//end,err=time.Parse(timeLayout,end_time)
-		end,err=time.Parse(timeLayout,end_time)
-		if err!=nil {
-			return nil,err
-		}
-		if end.Sub(start)<=0 {
-			return nil,errors.New("the start time is late to end time ")
-		}
-	}
-	time_str["start_time"]=start_time
-	time_str["end_time"]=end_time
-	return time_str,nil
 }

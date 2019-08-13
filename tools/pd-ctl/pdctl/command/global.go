@@ -187,7 +187,7 @@ func postJSON(cmd *cobra.Command, prefix string, input map[string]interface{}) {
 			}
 			return nil
 		}
-		cmd.Println("success!")
+		//cmd.Println("success!")
 		return nil
 	})
 
