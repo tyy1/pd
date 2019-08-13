@@ -118,7 +118,9 @@ func (s *transferRegionToLabelScheduler)Schedule(cluster schedule.Cluster) []*sc
 		if s.label_value == "" || s.label_key == "" {
 			continue
 		}
-		temLabel := metapb.StoreLabel{Key: s.label_key, Value: s.label_value}
+		var temLabel metapb.StoreLabel
+		temLabel.Key = s.label_key
+		temLabel.Value = s.label_value
 		schedule.UserScheRecords[uOp.RegionID()] = &temLabel
 	}
 

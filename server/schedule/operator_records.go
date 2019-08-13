@@ -13,7 +13,8 @@ var OpRecords map[uint64]time.Time
 var UserScheRecords map[uint64]*metapb.StoreLabel
 
 func init()  {
-	OpRecords=make(map[uint64]time.Time)
+	OpRecords = make(map[uint64]time.Time)
+	UserScheRecords = make(map[uint64]*metapb.StoreLabel)
 }
 
 func OpRecordCheck(regionId uint64,now_time time.Time) bool {
