@@ -55,18 +55,22 @@ func (s *BalanceSelector) SelectSource(opt Options, stores []*core.StoreInfo, fi
 		if FilterSource(opt, store, filters) {
 			continue
 		}
+		flag := selectSourceStore(store)
 		if result == nil ||
 			result.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) <
 				store.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) {
 			result = store
+			if flag {
+				result2 = store
+			}
 		}
 
-		flag := selectSourceStore(store)
-		if (result2 == nil && flag)||
-			(result2.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) <
-				store.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) && flag) {
-			result2 = store
-		}
+
+		//if (result2 == nil && flag)||
+		//	(result2.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) <
+		//		store.ResourceScore(s.kind, opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0) && flag) {
+		//	result2 = store
+		//}
 		if result2 != nil {
 			return result2
 		}
