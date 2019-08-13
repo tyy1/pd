@@ -160,18 +160,74 @@ func (s *schedulerTestSuite) TestScheduler(c *C) {
 	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-region-to-label-scheduler","3","zone","s1"}
 	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
 	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-region-to-label-scheduler","qw3","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-region-to-label-scheduler","3","","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-region-to-label-scheduler","3","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
 
 	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","2","zone","s4"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","ax","zone","s4"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","zone","s4"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","sd","2","zone","s4"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","2","zone","ss"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","2","zone","s4","-format=hex"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","2","zone","s4","-format=hex1"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","2","zone","s4","-format=row"}
+	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-keyrange-to-label-scheduler","a","2","zone","s4","-format=encode"}
 	_, output, err = pdctl.ExecuteCommandC(cmd, args...)
 	c.Assert(err, IsNil)
 
 	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-table-to-label-scheduler","mysql","user","zone","s1"}
 	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
 	c.Assert(err, IsNil)
-
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-table-to-label-scheduler","mysql","user","zone"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-label-to-label-scheduler","zone","s1","zone","s4"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
 	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-label-to-label-scheduler","2","zone","s1"}
 	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
 	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","transfer-regions-of-label-to-label-scheduler","zone","ss","zone","s4"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","set-scheduler","2","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","set-scheduler","2","zone"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","set-scheduler","0","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+	args=[]string{"-u", pdAddr, "scheduler", "t_add","set-scheduler","1","zone","s1"}
+	_, _, err = pdctl.ExecuteCommandC(cmd, args...)
+	c.Assert(err, IsNil)
+
+
 
 }
-
